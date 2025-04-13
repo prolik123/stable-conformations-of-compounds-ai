@@ -56,7 +56,7 @@ def view_conformers(geom_data):
         coords = [z[1:] for z in mol_data['xyz']]
         energies = mol_data['totalenergy']
         Z = [int(z[0]) for z in mol_data['xyz']]
-        plot_conformer_3d(Z, coords, f"Atoms for {i}-th conformer [Total Energy] - {energies}")
+        plot_conformer_3d(Z, coords, f"Atomy dla {i}-ej konformacji [Energia całkowita] - {energies}")
 
 def analyse_and_polt():
     crude_dataset, features_dataset = load_geom_sample()
