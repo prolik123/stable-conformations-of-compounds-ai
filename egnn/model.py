@@ -24,13 +24,19 @@ class E3GNN(Module):
 
         self.layers = torch.nn.ModuleList()
         for _ in range(num_layers):
-            layer = torch.nn.Sequential(
-                FullyConnectedTensorProduct(self.irreps_hidden, self.irreps_hidden, self.irreps_hidden),
-                Gate(self.irreps_hidden)
-            )
-            self.layers.append(layer)
+            tp = FullyConnectedTensorProduct(self.irreps_hidden, self.irreps_hidden, 
+                                             Irreps("16x0e + 16x0e + 16x1o"))
 
-        self.readout = Linear(self.irreps_hidden, self.irreps_out)
+            gate = Gate(
+                irreps_scalars=Irreps("16x0e"),
+                act_scalars=[torch.relu],
+                irreps_gates=Irreps("16x0e"),
+                act_gates=[torch.sigmoid],
+                irreps_gated=Irreps("16x1o")
+            )
+            self.layers.append(torch.nn.Sequential(tp, gate))
+
+        self.readout = Linear(Irreps("16x0e + 16x1o"), self.irreps_out)
 
     def forward(self, data: Data):
         pos = data.pos

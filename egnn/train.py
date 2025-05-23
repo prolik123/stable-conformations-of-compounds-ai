@@ -17,9 +17,10 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
         data.y = data.y[:, 7:8]
 
     n = len(dataset)
+    n = max(n, 1000)
     train_dataset = dataset[:int(n * 0.8)]
     val_dataset = dataset[int(n * 0.8):int(n * 0.9)]
-    test_dataset = dataset[int(n * 0.9):]
+    test_dataset = dataset[int(n * 0.9):n]
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset)
