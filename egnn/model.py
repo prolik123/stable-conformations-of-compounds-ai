@@ -50,7 +50,7 @@ class E3GNN(Module):
 
         for layer in self.layers:
             messages = layer[0](x[row], x[col])
-            agg = torch.zeros_like(x)
+            agg = torch.zeros(x.shape[0], messages.shape[1], device=x.device)
             agg.index_add_(0, row, messages)
             x = layer[1](agg)
 

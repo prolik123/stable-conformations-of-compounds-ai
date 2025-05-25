@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from egnn.model import E3GNN
-from utils.QM9DataLoader import load_qm9
+from utils.QM9DataLoader import load_qm9_with_energy
 from torch_geometric.loader import DataLoader
 
 torch.manual_seed(42)
@@ -11,10 +11,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def train(batch_size, lr = 1e-3, num_epochs = 100):
 
-    dataset = load_qm9()
+    dataset = load_qm9_with_energy()
 
-    for data in dataset:
-        data.y = data.y[:, 7:8]
+    #for data in dataset:
+    #    data.y = data.y[:, 12].unsqueeze(0)
 
     n = len(dataset)
     n = max(n, 1000)
@@ -44,6 +44,8 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
             
             optimizer.zero_grad()
             pred = model(batch)
+            #print(f"{batch}")
+            #print(f"Batch size: {batch.num_graphs}, Pred shape: {pred.shape}, Target shape: {batch.y.shape}")
             loss = loss_fn(pred, batch.y.squeeze())
             loss.backward()
             optimizer.step()

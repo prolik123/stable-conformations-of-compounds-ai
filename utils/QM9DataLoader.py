@@ -1,5 +1,6 @@
 import torch
 from torch_geometric.datasets import QM9
+from torch_geometric.transforms import BaseTransform
 
 
 def _add_all_edges(data):
@@ -17,6 +18,17 @@ def load_qm9():
     return QM9(root='../Datasets/QM9', transform=_add_all_edges)
 
 # labels distribution https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.datasets.QM9.html
+
+class QM9EnergyTransform(BaseTransform):
+    def __call__(self, data):
+        # Assuming the energy is in the 12th column of the target tensor
+        data.y = data.y[:, 12].unsqueeze(1)  # Keep it as a 2D tensor
+        return data
+
+
+
+def load_qm9_with_energy():
+    return QM9(root='../Datasets/QM9', transform=QM9EnergyTransform(), pre_transform=_add_all_edges)
 
 
 
