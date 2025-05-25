@@ -4,6 +4,9 @@ import torch.nn as nn
 from egnn.model import E3GNN
 from utils.QM9DataLoader import load_qm9_with_energy
 from torch_geometric.loader import DataLoader
+from tqdm import tqdm
+from torch.utils.data import random_split
+from torch.utils.data import Subset
 
 torch.manual_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -17,14 +20,18 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
     #    data.y = data.y[:, 12].unsqueeze(0)
 
     n = len(dataset)
-    n = max(n, 1000)
-    train_dataset = dataset[:int(n * 0.8)]
-    val_dataset = dataset[int(n * 0.8):int(n * 0.9)]
-    test_dataset = dataset[int(n * 0.9):n]
+    n = min(n, 10000)
+    subset_indices = list(range(n))
+    dataset = Subset(dataset, subset_indices)
+    train_len = int(n * 0.8)
+    val_len = int(n * 0.1)
+    test_len = n - train_len - val_len
+    train_dataset, val_dataset, test_dataset = random_split(dataset, [train_len, val_len, test_len])
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset)
     test_loader = DataLoader(test_dataset)
+    print(f"Dataset sizes: Train: {len(train_dataset)}, Val: {len(val_dataset)}, Test: {len(test_dataset)}")
 
     atom_embedding = nn.Embedding(100, 1).to(device)
 
@@ -38,7 +45,7 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0.0
-        for batch in train_loader:
+        for batch in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}"):
             batch = batch.to(device)
             batch.x = atom_embedding(batch.z)
             
@@ -69,7 +76,7 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
 
 
 if __name__ == "__main__":
-    batch_size = 32
+    batch_size = 8
     lr = 1e-3
-    num_epochs = 100
+    num_epochs = 5
     train(batch_size, lr, num_epochs)
