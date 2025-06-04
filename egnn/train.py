@@ -38,6 +38,9 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
 
     model = E3GNN(irreps_in="1x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e").to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    step_size = num_epochs // 3 if num_epochs > 3 else 1
+    gamma = lr ** (1 / step_size)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=num_epochs, gamma=gamma)
     loss_fn = torch.nn.MSELoss()
 
     print("Training...")
@@ -58,6 +61,8 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+
+        scheduler.step()
         
         # validate
         model.eval()
@@ -90,21 +95,24 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
 
 
 def test():
-    model = E3GNN(irreps_in="1x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e").to(device)
+    model = E3GNN(irreps_in="1x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e")
     model.load_state_dict(torch.load("egnn_model.pth"))
     model.eval()
 
     dataset = load_qm9_with_energy()
-    sample = dataset[0].to(device)
-    sample.x = nn.Embedding(100, 1)(sample.z).to(device)
+    sample = dataset[0]
+    sample.batch = torch.zeros(sample.num_nodes, dtype=torch.long)
+    sample.x = nn.Embedding(100, 1)(sample.z)
 
     with torch.no_grad():
         pred = model(sample)
-        print(f"Predicted energy: {pred.item()}, Actual energy: {sample.y.item()}")
+        mse = nn.MSELoss()(pred, sample.y.unsqueeze(0))
+        print(f"Predicted energy: {pred.item()}, Actual energy: {sample.y.item()}, MSE: {mse.item()}")
 
 if __name__ == "__main__":
     batch_size = 15
-    lr = 1e-3
-    num_epochs = 20
+    lr = 1e-2
+    num_epochs = 10
     samples = 10000
-    train(batch_size, lr, num_epochs, samples)
+    #train(batch_size, lr, num_epochs, samples)
+    test()
