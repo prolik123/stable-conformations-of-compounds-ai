@@ -12,7 +12,7 @@ torch.manual_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def train(batch_size, lr = 1e-3, num_epochs = 100):
+def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
 
     dataset = load_qm9_with_energy()
 
@@ -20,7 +20,7 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
     #    data.y = data.y[:, 12].unsqueeze(0)
 
     n = len(dataset)
-    n = min(n, 10000)
+    n = min(n, samples)
     subset_indices = list(range(n))
     dataset = Subset(dataset, subset_indices)
     train_len = int(n * 0.8)
@@ -48,17 +48,28 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
         for batch in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}"):
             batch = batch.to(device)
             batch.x = atom_embedding(batch.z)
-            
+            #print(f"{batch[0]}, {batch[0].pos}")
             optimizer.zero_grad()
             pred = model(batch)
             #print(f"{batch}")
             #print(f"Batch size: {batch.num_graphs}, Pred shape: {pred.shape}, Target shape: {batch.y.shape}")
-            loss = loss_fn(pred, batch.y.squeeze())
+            #print(f"pred: {pred.squeeze()}, target: {batch.y.squeeze()}")
+            loss = loss_fn(pred.squeeze(), batch.y.squeeze())
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
         
-        print(f"Epoch {epoch} | Train Loss: {total_loss / len(train_loader):.6f}")
+        # validate
+        model.eval()
+        with torch.no_grad():
+            val_loss = 0.0
+            for batch in val_loader:
+                batch = batch.to(device)
+                batch.x = atom_embedding(batch.z)
+                pred = model(batch)
+                loss = loss_fn(pred, batch.y.squeeze())
+                val_loss += loss.item()
+            print(f"Epoch {epoch} | Train Loss: {total_loss / len(train_loader):.6f}, Val Loss: {val_loss / len(val_loader):.6f}")
 
 
     model.eval()
@@ -74,9 +85,26 @@ def train(batch_size, lr = 1e-3, num_epochs = 100):
     average_mse /= len(test_loader)
     print(f"Test MSE: {average_mse:.6f}")
 
+    # Save the model
+    torch.save(model.state_dict(), "egnn_model.pth")
+
+
+def test():
+    model = E3GNN(irreps_in="1x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e").to(device)
+    model.load_state_dict(torch.load("egnn_model.pth"))
+    model.eval()
+
+    dataset = load_qm9_with_energy()
+    sample = dataset[0].to(device)
+    sample.x = nn.Embedding(100, 1)(sample.z).to(device)
+
+    with torch.no_grad():
+        pred = model(sample)
+        print(f"Predicted energy: {pred.item()}, Actual energy: {sample.y.item()}")
 
 if __name__ == "__main__":
-    batch_size = 8
+    batch_size = 15
     lr = 1e-3
-    num_epochs = 5
-    train(batch_size, lr, num_epochs)
+    num_epochs = 20
+    samples = 10000
+    train(batch_size, lr, num_epochs, samples)
