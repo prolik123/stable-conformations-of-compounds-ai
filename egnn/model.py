@@ -9,7 +9,7 @@ from e3nn.o3 import Linear
 
 
 class E3GNN(Module):
-    def __init__(self, irreps_in="1x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e", 
+    def __init__(self, irreps_in="16x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e", 
                  num_layers=3, num_neighbors=12, cutoff=5.0):
         super().__init__()
         self.num_layers = num_layers
@@ -29,7 +29,7 @@ class E3GNN(Module):
 
             gate = Gate(
                 irreps_scalars=Irreps("16x0e"),
-                act_scalars=[torch.relu],
+                act_scalars=[torch.sigmoid],
                 irreps_gates=Irreps("16x0e"),
                 act_gates=[torch.sigmoid],
                 irreps_gated=Irreps("16x1o")

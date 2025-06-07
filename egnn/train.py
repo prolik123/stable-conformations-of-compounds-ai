@@ -33,10 +33,10 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
     test_loader = DataLoader(test_dataset)
     print(f"Dataset sizes: Train: {len(train_dataset)}, Val: {len(val_dataset)}, Test: {len(test_dataset)}")
 
-    atom_embedding = nn.Embedding(100, 1).to(device)
+    atom_embedding = nn.Embedding(100, 16).to(device)
 
 
-    model = E3GNN(irreps_in="1x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e").to(device)
+    model = E3GNN(irreps_in="16x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e").to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     step_size = num_epochs // 3 if num_epochs > 3 else 1
     gamma = lr ** (1 / step_size)
@@ -95,14 +95,14 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
 
 
 def test():
-    model = E3GNN(irreps_in="1x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e")
+    model = E3GNN(irreps_in="16x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e")
     model.load_state_dict(torch.load("egnn_model.pth"))
     model.eval()
 
     dataset = load_qm9_with_energy()
-    sample = dataset[0]
+    sample = dataset[5]
     sample.batch = torch.zeros(sample.num_nodes, dtype=torch.long)
-    sample.x = nn.Embedding(100, 1)(sample.z)
+    sample.x = nn.Embedding(100, 16)(sample.z)
 
     with torch.no_grad():
         pred = model(sample)
@@ -111,8 +111,8 @@ def test():
 
 if __name__ == "__main__":
     batch_size = 15
-    lr = 1e-2
-    num_epochs = 10
-    samples = 10000
-    #train(batch_size, lr, num_epochs, samples)
-    test()
+    lr = 1e-3
+    num_epochs = 5
+    samples = 100000000000 # inf
+    train(batch_size, lr, num_epochs, samples)
+    #test()
