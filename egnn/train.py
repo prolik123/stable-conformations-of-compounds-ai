@@ -12,12 +12,9 @@ torch.manual_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
+def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000, path = None):
 
     dataset = load_qm9_with_energy()
-
-    #for data in dataset:
-    #    data.y = data.y[:, 12].unsqueeze(0)
 
     n = len(dataset)
     n = min(n, samples)
@@ -35,12 +32,15 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
 
     atom_embedding = nn.Embedding(100, 16).to(device)
 
-
     model = E3GNN(irreps_in="16x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e").to(device)
+    if path is not None:
+        model.load_state_dict(torch.load(path))
+        print(f"Loaded model from {path}")
+
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     step_size = num_epochs // 3 if num_epochs > 3 else 1
-    gamma = lr ** (1 / step_size)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=num_epochs, gamma=gamma)
+    gamma = 0.5
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
     loss_fn = torch.nn.MSELoss()
 
     print("Training...")
@@ -51,9 +51,12 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
         for batch in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}"):
             batch = batch.to(device)
             batch.x = atom_embedding(batch.z)
-            #print(f"{batch[0]}, {batch[0].pos}")
+
+            #print(f"{batch[0]}, {batch[0].pos}, {batch[0].y}")
+
             optimizer.zero_grad()
             pred = model(batch)
+
             #print(f"{batch}")
             #print(f"Batch size: {batch.num_graphs}, Pred shape: {pred.shape}, Target shape: {batch.y.shape}")
             #print(f"pred: {pred.squeeze()}, target: {batch.y.squeeze()}")
@@ -72,7 +75,7 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
                 batch = batch.to(device)
                 batch.x = atom_embedding(batch.z)
                 pred = model(batch)
-                loss = loss_fn(pred, batch.y.squeeze())
+                loss = loss_fn(pred.squeeze(), batch.y.squeeze())
                 val_loss += loss.item()
             print(f"Epoch {epoch} | Train Loss: {total_loss / len(train_loader):.6f}, Val Loss: {val_loss / len(val_loader):.6f}")
 
@@ -80,11 +83,12 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
     model.eval()
     average_mse = 0.0
     with torch.no_grad():
-        for batch in test_loader:
+        for batch in tqdm(test_loader, desc="Testing"):
             batch = batch.to(device)
             batch.x = atom_embedding(batch.z)
             pred = model(batch)
-            mse = loss_fn(pred, batch.y.squeeze())
+            
+            mse = loss_fn(pred.squeeze(), batch.y.squeeze())
             average_mse += mse.item()
     
     average_mse /= len(test_loader)
@@ -94,9 +98,9 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000):
     torch.save(model.state_dict(), "egnn_model.pth")
 
 
-def test():
+def test(model_path = "egnn_model.pth"):
     model = E3GNN(irreps_in="16x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e")
-    model.load_state_dict(torch.load("egnn_model.pth"))
+    model.load_state_dict(torch.load(model_path))
     model.eval()
 
     dataset = load_qm9_with_energy()
@@ -105,14 +109,19 @@ def test():
     sample.x = nn.Embedding(100, 16)(sample.z)
 
     with torch.no_grad():
+        print(f"Sample: {sample} {sample.x}, {sample.pos}, {sample.batch}, {sample.y}")
+
         pred = model(sample)
-        mse = nn.MSELoss()(pred, sample.y.unsqueeze(0))
+
+        print(f"Predicted energy: {pred.item()}, Actual energy: {sample.y.item()}")
+        mse = nn.MSELoss()(pred.squeeze(), sample.y.squeeze())
         print(f"Predicted energy: {pred.item()}, Actual energy: {sample.y.item()}, MSE: {mse.item()}")
 
 if __name__ == "__main__":
-    batch_size = 15
+    batch_size = 12
     lr = 1e-3
-    num_epochs = 5
+    num_epochs = 25
     samples = 100000000000 # inf
-    train(batch_size, lr, num_epochs, samples)
-    #test()
+    path = "egnn_model3.pth"
+    train(batch_size, lr, num_epochs, samples, path)
+    #test(path)

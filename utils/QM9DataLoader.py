@@ -21,8 +21,8 @@ def load_qm9():
 
 class QM9EnergyTransform(BaseTransform):
     def __call__(self, data):
-        # Assuming the energy is in the 12th column of the target tensor
-        data.y = data.y[:, 12].unsqueeze(1)  # Keep it as a 2D tensor
+        #print(data.y)
+        data.y = data.y[:, 7:8].unsqueeze(1)  # Keep it as a 2D tensor
         return data
 
 

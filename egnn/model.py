@@ -59,4 +59,4 @@ class E3GNN(Module):
         energy = torch.zeros(batch.max() + 1, device=x.device)
         energy.index_add_(0, batch, out.squeeze(-1)) 
 
-        return energy
+        return energy * 1000
