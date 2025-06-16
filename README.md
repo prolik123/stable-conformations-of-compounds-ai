@@ -51,7 +51,7 @@ Some utility scripts:
 ## Results
 The model 1 was able to achieve a mean squered error (MSE) of 20 eV on the QM9 dataset. The model is present in the `eggn_model_20.pth` file, which can be used for further predictions or analysis.
 
-The model 2 which is a fine tuned version of the model 1 on the ANI-1ccx, is available in the `eggn_model_ani.pth` file. This model achieved worse results on both datasets, but it is more general and can be used for other datasets as well.
+The model 2 which is a fine tuned version of the model 1 on the ANI-1ccx, is available in the `fine_tuned_model_weak.pth` file. This model achieved worse results on both datasets, but it is more general and can be used for other datasets as well.
 
 For generating data with shifted coordinates, use the `random_shift.py` script. And then feed the data to the `test` method in the `eggn.train` file.
 
