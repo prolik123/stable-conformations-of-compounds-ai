@@ -130,7 +130,7 @@ def test(model_path = "egnn_model.pth"):
             batch = batch.to(device)
             batch.x = atom_embedding(batch.z)
             pred = model(batch)
-            print(f"batch size: {batch}, Pred shape: {batch.batch}")
+            print(f"batch size: {batch.pos}, Pred shape: {batch.z}")
             
             print(f"pred: {pred.squeeze()}, target: {batch.y.squeeze()}")
             mse = loss_fn(pred.squeeze(), batch.y.squeeze())
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     lr = 2e-5
     num_epochs = 1
     samples = 100000000000 # inf
-    path = "fine_tuned_model_weak.pth"
-    #train(batch_size, lr, num_epochs, samples, path)
-    train(batch_size, lr, num_epochs, samples, path, False)
+    path = "egnn_model_20.pth"
+    train(batch_size, lr, num_epochs, samples, path)
+    #train(batch_size, lr, num_epochs, samples, path, False)
     #test(path)
