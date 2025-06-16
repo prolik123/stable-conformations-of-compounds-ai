@@ -119,9 +119,9 @@ def test(model_path = "egnn_model.pth"):
 
 if __name__ == "__main__":
     batch_size = 12
-    lr = 1e-3
-    num_epochs = 25
+    lr = 1e-4
+    num_epochs = 1
     samples = 100000000000 # inf
-    path = "egnn_model3.pth"
+    path = "egnn_model_25.pth"
     train(batch_size, lr, num_epochs, samples, path)
     #test(path)
