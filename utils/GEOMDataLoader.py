@@ -7,12 +7,12 @@ from utils.file_untarer import extract_tar_file
 folder_path = "../Datasets/GEOM"
 
 crude_url = r"https://dataverse.harvard.edu/api/access/datafile/4327190"
-crude_file_name = r"qm9_crude.msgpack.tar.gz"
+crude_file_name = r"drug_crude.msgpack.tar.gz"
 crude_file_name_unpacked = r"qm9_crude.msgpack"
 
 featurized_url = r"https://dataverse.harvard.edu/api/access/datafile/4327191"
-featurized_file_name = r"qm9_featurized.msgpack.tar.gz"
-featurized_file_name_unpacked = r"qm9_featurized.msgpack"
+featurized_file_name = r"drug_featurized.msgpack.tar.gz"
+featurized_file_name_unpacked = r"drug_featurized.msgpack"
 
 def _download_from_url_to_path(url, file_name):
     file_path = os.path.join(folder_path, file_name)
