@@ -5,7 +5,8 @@ import torch
 from egnn.model import E3GNN
 import torch.nn as nn
 import tqdm
-from openqdc.datasets import GEOM
+#from openqdc.datasets import GEOM
+from torch.utils.data import random_split
 
 def test_md17(path):
     model = E3GNN(irreps_in="16x0e", irreps_hidden="16x0e + 16x1o", irreps_out="1x0e")
@@ -19,11 +20,13 @@ def test_md17(path):
 
     n = 1000
     dataset = dataset[:n]
+    _, _, test_dataset = random_split(dataset, [0, 0, n])
+
     preprocessed_data = []
-    for data in dataset:
+    for data in test_dataset:
         energhy = data.energy  # Add energy as y
         # conver to Hartree energy
-        data.y = energhy.unsqueeze(0) / 27.2114
+        data.y = energhy.unsqueeze(0)
 
         data.x = atom_embedding(data.z)  # Add atom embedding as x
         preprocessed_data.append(data)
@@ -38,13 +41,18 @@ def test_md17(path):
             print(batch.pos)
             print(batch.batch)
             pred = model(batch)
-            mse = loss_fn(pred, batch.y.squeeze())
+            # find mimal index in batch.y
+            min_index = batch.y.argmin()
+            min_pred_index = pred.argmin()
+            #mse = loss_fn(pred, batch.y.squeeze())
             print(f"Pred {pred}, Target {batch.y.squeeze()}")
-            average_mse += mse.item()
+            print(f"Min index in target: {min_index}, Min index in pred: {min_pred_index}")
+            if min_index == min_pred_index:
+                average_mse += 1
     
     average_mse /= len(test_loader)
     print(f"Test MSE: {average_mse:.6f}")
 
 
 if __name__ == "__main__":
-    test_md17("egnn_model_mse=1.pth")  # Path to the saved model
+    test_md17("egnn_model_20.pth")  # Path to the saved model
