@@ -84,6 +84,7 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000, path = Non
 
     model.eval()
     average_mse = 0.0
+    prints = 0
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Testing"):
             batch = batch.to(device)
@@ -91,7 +92,10 @@ def train(batch_size, lr = 1e-3, num_epochs = 20, samples = 10000000, path = Non
             pred = model(batch)
             #print(f"Sample: {sample} Z {sample.z}, POS {sample.pos}, BATCH {sample.batch}, {sample.y}")
             
-            print(f"pred: {pred.squeeze()}, target: {batch.y.squeeze()}")
+            #print(f"pred: {pred.squeeze()}, target: {batch.y.squeeze()}")
+            if prints < 10:
+                print(f"pred: {pred.squeeze()}, target: {batch.y.squeeze()}")
+                prints += 1
             mse = loss_fn(pred.squeeze(), batch.y.squeeze())
             average_mse += mse.item()
             #break
@@ -138,7 +142,7 @@ if __name__ == "__main__":
     lr = 2e-5
     num_epochs = 1
     samples = 100000000000 # inf
-    path = "egnn_model_20.pth"
+    path = "fine_tuned_model_weak.pth"
     #train(batch_size, lr, num_epochs, samples, path)
-    #train(batch_size, lr, num_epochs, samples, path, False)
-    test(path)
+    train(batch_size, lr, num_epochs, samples, path, False)
+    #test(path)
